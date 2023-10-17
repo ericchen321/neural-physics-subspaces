@@ -210,17 +210,60 @@ class Rigid3DSystem:
         
             system.body_ID = np.array([2, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2])
 
+        elif problem_name == 'simple_pendulum':
+            
+            scale = 1.0
+
+            bodies.append(
+                make_body(os.path.join(".", "data", "klann-gold.obj"), 1000, scale))
+            
+            # NOTE: I guess by "fixed" they didn't mean a joint is fixed, but a body's configuration
+            # being fully fixed
+            numBodiesFixed = 0
+
+            joint_pos_local = jnp.array([0.0, 0.05, 0.0])
+            ang = 0.0
+            R = jnp.array(
+                [[jnp.cos(ang),  0.0, jnp.sin(ang)], [0.0,  1.0, 0.0], [-jnp.sin(ang),  0.0, jnp.cos(ang)]])
+            pos_init = jnp.array(bodies[0]['x0'][3, :])
+            joint_pos_world = jnp.matmul(R, joint_pos_local) + pos_init     
+            joint_list.append(
+                make_joint(
+                    0,
+                    -1,
+                    bodies,
+                    # jnp.array([-0.0876048,   0.2592638,  -0.18627846]),
+                    # jnp.array([ 0,           0.08      ,0.044 ]),
+                    # jnp.array([-0.13000469,  0.12866549,  0.07354047]),
+                    joint_pos_world,
+                    jnp.array([0.0, 0.0, 1.0])))
+
+            ###
+            system_def["gravity"] = jnp.array([0.0, -0.98, 0.0])
+            system_def['external_forces']['force_strength_minmax'] = (-300, 300)
+            system_def['external_forces']['force_strength_x'] = 0.0
+            system_def['external_forces']['force_strength_y'] = 0.0
+            system_def['external_forces']['force_strength_z'] = 0.0
+        
         else:
             raise ValueError("unrecognized system problem_name")
         
         #
         posFixed  = jnp.array( np.array([ body['x0']   for body in bodies[0:numBodiesFixed] ]).flatten() )
+        # print(bodies[0].keys())
+        # print(bodies[0]['x0'])
+        # while True:
+        #     pass
         pos  = jnp.array( np.array([ body['x0']   for body in bodies[numBodiesFixed:] ]).flatten() )
 
         mass = jnp.array( np.array([ body['mass'] for body in bodies[numBodiesFixed:] ]).flatten() )
         
         #
         system.dim = pos.size
+        # print(f"pos.shape: {pos.shape}")
+        # print(f"pos: {pos}")
+        # while True:
+        #     pass
 
         system.bodiesRen = bodies
         system.n_bodies = len(bodies)
